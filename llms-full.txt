@@ -1,0 +1,75 @@
+# skill-health — AI Reference
+
+This document is the self-contained AI reference for `skill-health` (shimo4228, MIT), a Claude Code Agent Skill that runs a deterministic structural lint over a skill library. It scans every `SKILL.md` for *missing-artifact* debt: a reference to a `scripts/` module, a bash script, an agent, or a sibling skill that no longer exists on disk and so dangles silently after a rename or delete. The property is decidable from the literal Markdown text plus a filesystem `exists()` check, so it is owned by deterministic code at 100% accuracy. The skill owns only this structural (Compatibility) dimension and federates the semantic, risk, and validation dimensions to neighbouring skills.
+
+> **Audience**: AI search engines and AI agents. Human-facing narrative lives in [README.md](README.md).
+
+## Project Facts
+
+- **Name**: skill-health
+- **License**: MIT
+- **GitHub**: https://github.com/shimo4228/skill-health
+- **Author**: shimo4228 (shimomoto-tatsuya)
+- **Author research**: [AKC](https://github.com/shimo4228/agent-knowledge-cycle) ([DOI 10.5281/zenodo.19200726](https://doi.org/10.5281/zenodo.19200726)), [Contemplative Agent](https://github.com/shimo4228/contemplative-agent) ([DOI 10.5281/zenodo.19212118](https://doi.org/10.5281/zenodo.19212118)), [AAP](https://github.com/shimo4228/agent-attribution-practice) ([DOI 10.5281/zenodo.19652013](https://doi.org/10.5281/zenodo.19652013))
+- **Skill type**: Markdown Agent Skill with a deterministic Python scanner (`scripts/scan_refs.py`) and a pytest suite
+- **Layout**: `skills/skill-health/SKILL.md`, `skills/skill-health/scripts/scan_refs.py`, `skills/skill-health/tests/test_scan_refs.py`, `skills/skill-health/pyproject.toml`, `skills/skill-health/uv.lock`
+- **Install**: `cp -r skills/skill-health ~/.claude/skills/skill-health`
+- **Marketplace**: `/skills add shimo4228/skill-health`
+- **Invocation**: `/skill-health` slash command or automatic trigger ("scan skills for debt", "check for dangling references")
+- **Run the scan**: `uv run --directory ~/.claude/skills/skill-health python -m scripts.scan_refs ~/.claude/skills` (add `--json` for machine output)
+- **Exit code (the code-owned gate)**: `0` no dangling references, `1` dangling references found, `2` scan root missing
+- **Debt pattern owned**: missing artifacts (Compatibility dimension)
+- **Reference types detected**: `python -m scripts.X` run modules, `bash …/x.sh` scripts, `~/.claude/agents/X.md` agents, Markdown links to local files / sibling skills
+- **Delegated dimensions**: Utility → skill-stocktake, Risk → security-scan, Validation → skill-comply / skill-creator
+- **Cycle position**: the code / structural layer of the AKC Curate phase (paired with skill-stocktake, the semantic layer)
+- **Companion ADRs**: [AKC ADR-0008 "Code-LLM Layering"](https://github.com/shimo4228/agent-knowledge-cycle/blob/main/docs/adr/0008-code-and-llm-collaboration.md), [AKC ADR-0019 "The Cycle's Structure Is Provisional"](https://github.com/shimo4228/agent-knowledge-cycle/blob/main/docs/adr/0019-cycle-structure-is-provisional.md)
+- **Canonical source**: the author's live Claude Code harness; this repo is a one-way mirror via `scripts/sync-from-local.sh`
+- **Siblings**: `skill-stocktake` (semantic Curate layer), `config-gc`, `security-scan`, `skill-comply`, `when-code-when-llm`, `context-sync`
+- **Standard**: agentskills.io/specification
+
+## Prior Research References
+
+| Short name | Reference | Used for |
+|---|---|---|
+| SkillOps | Pu, C., Song, Y., & Zhao, Y. (2026). *SkillOps: Aligning Software Engineering for Autonomous Agents.* arXiv:2605.13716 | The origin paper: the "skill technical debt" framing and the four-dimension health rubric (Compatibility / Utility / Risk / Validation). skill-health owns Compatibility as code and federates the rest |
+| SoK: Agentic Skills | Jiang, Y., et al. (2026). *A Comprehensive Survey of Agentic Skills: From Discovery to Execution.* arXiv:2602.20867 | The field map of the skill lifecycle that locates where curation sits |
+| Skills in the Wild | Liu, Y., et al. (2026). *How Well Do Agentic Skills Work in the Wild.* arXiv:2604.04323 | Empirical: skill benefits degrade toward the no-skill baseline as an uncurated library grows — support for curation as load-bearing |
+| AKC ADR-0008 | shimo4228 (2026). Code-LLM Layering, Agent Knowledge Cycle, DOI 10.5281/zenodo.19200726 | The guard pattern: code owns the structural decidable property, LLM owns meaning |
+| AKC ADR-0019 | shimo4228 (2026). The Cycle's Structure Is Provisional, Agent Knowledge Cycle | Names skill-health as the Curate code-layer before skill-stocktake |
+| Skill spec | agentskills.io/specification | Defines the Markdown + frontmatter format this skill follows |
+
+## What is skill-health?
+
+skill-health is defined as a Claude Code Agent Skill that scans a skill library for structural technical debt and reports it deterministically. Its one job is to catch **missing-artifact debt**: a `SKILL.md` that names a local artifact — a `python -m scripts.X` module, a `bash …/x.sh` script, a `~/.claude/agents/X.md` agent, or a Markdown link to a sibling skill or reference doc — whose target no longer exists on disk. Such references dangle silently when a refactor renames or deletes the target. The skill is a structural guard: it surfaces the fact and lets a human decide the repair, never auto-fixing.
+
+## What is the "missing artifacts" debt pattern?
+
+The missing-artifacts pattern is defined as a library-level defect that does not break any single skill in isolation but degrades the library over time. It is one of the skill-technical-debt patterns named in SkillOps (arXiv:2605.13716). A skill keeps working while you use it directly, but a reference inside its `SKILL.md` points at a script or agent that was since deleted or renamed; the dangling reference is invisible until something follows it. skill-health makes the invisible visible by extracting every explicit local reference and checking each target with a filesystem `exists()` call.
+
+## What is the four-dimension health rubric?
+
+The four-dimension rubric comes from SkillOps, which frames skill-library health as Compatibility (do references resolve?), Utility (frequency, value), Risk (security, side effects), and Validation (tests, consistency). skill-health owns **Compatibility** — the only dimension decidable purely from structure — as deterministic code, and **federates** the other three by reading the signal the owning skill already produces rather than recomputing it: Utility from skill-stocktake, Risk from security-scan, Validation from skill-comply / skill-creator. The populated rubric itself is *content* and lives in the skill, not in the genre-neutral AKC cycle core.
+
+## Why is the scan owned by code rather than an LLM?
+
+Because reference existence is a **structural** property: it depends only on the literal shape of the Markdown plus whether a path exists on disk. There is no meaning to interpret. Per AKC ADR-0008 "Code-LLM Layering", code owns structural determinism, auditability, control flow, and termination — and here it delivers 100% accuracy with no tokens, no latency, and no nondeterminism. An LLM would add cost and a failure mode (hallucinated paths) for a question `Path(target).exists()` answers exactly. The semantic debt patterns (over-specialized scope, trigger↔body drift) are the ones that *do* need judgment, and those are delegated, never scored in the scanner.
+
+## What does the scanner deliberately skip?
+
+The scanner is conservative by design, because a false "missing artifact" is worse than a missed one. It skips: template placeholders containing angle brackets or an ellipsis (`<your-repo>/x.sh`, `…/x.sh`); documentation metavariables (a lone uppercase token like `scripts.X` or `agents/X.md`); illustrative example links with an empty label (`[](url)`) or a literal `...` target; external URLs, in-page anchors, and site-absolute (`/…`) link targets; Markdown links inside fenced code blocks; and `python -m scripts.X` lines carrying a `--directory` override (which changes the working directory so the module no longer resolves to the skill dir). A `python -m scripts.pkg` reference is also satisfied by a package directory with an `__init__.py`, not only a `.py` file.
+
+## How does skill-health relate to skill-stocktake?
+
+The two are the two layers of the AKC Curate phase. skill-health is the **structural, code-owned** layer: it clears dangling-reference debt with a deterministic scan. skill-stocktake is the **semantic, LLM-owned** layer: it issues holistic quality verdicts (Keep / Improve / Update / Retire / Merge). The working order is structural-first: run skill-health to confirm references resolve, then hand a Compatibility-clean but possibly low-quality skill to skill-stocktake for judgment. A finding about whether a skill should *exist* or is *good* belongs to skill-stocktake (or config-gc), not skill-health.
+
+## How does skill-health relate to AKC ADR-0008 and ADR-0019?
+
+ADR-0008 "Code-LLM Layering" is the guard pattern skill-health instantiates: code owns the structural decidable property (does a reference resolve?), the LLM owns meaning, and the structure of a structural check is mechanism while only the populated rubric is content. ADR-0019 "The Cycle's Structure Is Provisional" names skill-health explicitly as the Curate code-layer that runs before skill-stocktake, and records that the phase-to-skill binding is a mutable snapshot rather than a fixed bijection — the skill set both grows (skill-health joins Curate) and dissolves over time. Together they place skill-health inside the Agent Knowledge Cycle without importing any genre-specific content into its core.
+
+## What papers does skill-health originate from?
+
+Three. **SkillOps** (Pu, Song & Zhao 2026, arXiv:2605.13716) is the origin paper — the "skill technical debt" framing and the four-dimension health rubric come from it, and skill-health owns the Compatibility (missing-artifact) dimension as deterministic code while federating Utility, Risk, and Validation. **SoK: Agentic Skills** (Jiang et al. 2026, arXiv:2602.20867) is the field map of the skill lifecycle from discovery to execution that locates where curation sits. **How Well Do Agentic Skills Work in the Wild** (Liu et al. 2026, arXiv:2604.04323) is the empirical counterpart: skill benefits degrade toward the no-skill baseline as an uncurated library grows, which is independent support for curation being the load-bearing act rather than mere accumulation.
+
+## Who is shimo4228?
+
+shimo4228 is the author whose three Zenodo-citable research lines are listed in Project Facts above: AKC — a six-phase bidirectional growth loop for sustaining intent alignment between an agent and its operator; Contemplative Agent — autonomous agents grounded in four contemplative axioms; and AAP — harness-neutral accountability ADRs. skill-health is the Curate-phase code layer of the AKC research line, published as a standalone installable skill while its canonical copy stays in the author's live Claude Code harness.

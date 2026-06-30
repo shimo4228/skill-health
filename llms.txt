@@ -1,0 +1,40 @@
+# skill-health
+
+> A Claude Code skill (MIT) that runs a deterministic structural lint over a skill library: it scans every SKILL.md for *missing-artifact* debt — a reference to a `scripts/` module, bash script, agent, or sibling skill that no longer exists on disk. The check is decidable by a filesystem `exists()` call (100% accuracy); semantic quality, risk, and validation are delegated to skill-stocktake / security-scan / skill-comply.
+
+## Core documentation
+
+- [llms-full.txt](llms-full.txt): self-contained Q&A reference for AI agents (Project Facts, Prior Research, question-form H2 sections)
+- [README.md](README.md): human-facing narrative (install, the four dimensions table, quick example, references)
+- [SKILL.md](skills/skill-health/SKILL.md): full skill specification — the four-phase scan (Inventory / Compatibility / Federate / Report), the boundary table, the conservative-by-design extraction rules
+
+## Architecture
+
+- Owns one debt pattern no other harness skill checks: **missing artifacts** — a dangling reference in a SKILL.md after a rename or delete
+- **Structural property**: decidable from the literal Markdown text plus a filesystem `exists()` check → owned by deterministic code at 100% accuracy (AKC ADR-0008 Code-LLM Layering)
+- The semantic, risk, and validation dimensions are **delegated, never re-scored**: Utility → skill-stocktake, Risk → security-scan, Validation → skill-comply / skill-creator
+- Scanner is **conservative by design**: skips template placeholders (`<your-repo>/x.sh`), illustrative example links (`[](url)`), and `--directory`-overridden commands — a false "missing artifact" is worse than a missed one
+- Exit code is the code-owned gate: `0` clean, `1` dangling references found, `2` scan root missing
+- The **code / structural layer of the AKC Curate phase**, paired with skill-stocktake as the semantic layer (AKC ADR-0019)
+- Canonical copy lives in the author's Claude Code harness; this repo is a one-way mirror via `scripts/sync-from-local.sh`
+
+## Standard reference
+
+- [Agent Skill specification](https://agentskills.io/specification): the skill format used by this repo
+- [AKC ADR-0008 "Code-LLM Layering"](https://github.com/shimo4228/agent-knowledge-cycle/blob/main/docs/adr/0008-code-and-llm-collaboration.md): the guard pattern — code owns the structural decidable property, LLM owns meaning
+- [AKC ADR-0019 "The Cycle's Structure Is Provisional"](https://github.com/shimo4228/agent-knowledge-cycle/blob/main/docs/adr/0019-cycle-structure-is-provisional.md): names skill-health as the Curate code-layer before skill-stocktake
+
+## References
+
+- **SkillOps** (origin paper) — Pu, C., Song, Y., & Zhao, Y. (2026). *SkillOps: Aligning Software Engineering for Autonomous Agents.* arXiv:2605.13716. https://arxiv.org/abs/2605.13716 — the "skill technical debt" framing and the four-dimension health rubric (Compatibility / Utility / Risk / Validation); skill-health owns the Compatibility (missing-artifact) dimension as deterministic code and federates the other three.
+- **SoK: Agentic Skills** — Jiang, Y., et al. (2026). *A Comprehensive Survey of Agentic Skills: From Discovery to Execution.* arXiv:2602.20867. https://arxiv.org/abs/2602.20867 — the field map of the skill lifecycle.
+- **How Well Do Agentic Skills Work in the Wild** — Liu, Y., et al. (2026). arXiv:2604.04323. https://arxiv.org/abs/2604.04323 — skill benefits degrade toward the no-skill baseline as an uncurated library grows; independent support for curation as the load-bearing act.
+
+## Sibling skills
+
+- [skill-stocktake](https://github.com/shimo4228/skill-stocktake): holistic skill *quality* audit (Keep/Improve/Retire/Merge) — the semantic Curate layer this skill pairs with
+- [config-gc](https://github.com/shimo4228/config-gc): GC over *existence* across hooks / permissions / MCP / cache
+- [security-scan](https://github.com/shimo4228/security-scan): the *risk* dimension skill-health delegates to
+- [skill-comply](https://github.com/shimo4228/skill-comply): measures whether agents actually follow skill / rule definitions (the *validation* dimension)
+- [when-code-when-llm](https://github.com/shimo4228/when-code-when-llm): per-task structural-vs-semantic tool selection — the axis skill-health embodies
+- [context-sync](https://github.com/shimo4228/context-sync): audits and fixes project documentation roles

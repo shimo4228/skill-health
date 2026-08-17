@@ -53,7 +53,7 @@ root, from `enabledPlugins`, from `installed_plugins.json`, and from the agent's
 own skill listing) and three skills were "fixed" to stop pointing at a command
 that was live all along. Code enumerates the names it cannot resolve; a human or
 a holistic pass decides which are real (enumerate/decide, per
-`when-code-when-llm`). `_KNOWN_NON_FILE_SKILLS` in the scanner is noise
+structural checks). `_KNOWN_NON_FILE_SKILLS` in the scanner is noise
 reduction only — never an authority on what exists.
 
 Ownership is decided by `is_symlink()` alone — no git call. `git ls-files` cannot
@@ -130,7 +130,12 @@ For the scanned skills, surface the existing signals so the report is a single
 health view — **labelling each value's source**, never recomputing it:
 
 - **Utility** — read `~/.claude/metrics/skill-usage.jsonl` for 7/30/90-day
-  counts (the same log `skill-stocktake` uses). Where a skill is rarely or never
+  counts (the same log `skill-stocktake` uses). Apply the same corrections as
+  `skill-stocktake`'s "Four corrections" (that section is canonical) — in
+  particular drop `sandbox: true` rows and, for windows reaching before
+  2026-08-17, rows whose `project` is under `/tmp/skill-comply-sandbox` /
+  `/private/tmp/skill-comply-sandbox`: those are skill-comply's compliance test
+  calling the skill, not use. Where a skill is rarely or never
   triggered, judge **[LLM]** whether the cause is *over-specialized* scope (a
   trigger so narrow it never fires) versus simply *new*. If the log's first
   event is younger than 90 days, render usage as `unmeasured` — never `0`.

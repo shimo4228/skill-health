@@ -1,6 +1,6 @@
 # skill-health
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/shimo4228/skill-health) [![GitMCP](https://img.shields.io/endpoint?url=https://gitmcp.io/badge/shimo4228/skill-health)](https://gitmcp.io/shimo4228/skill-health)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/shimo4228/skill-health)
 
 An [Agent Skill](https://agentskills.io/specification) that runs a **deterministic structural lint over a skill library**: it scans every `SKILL.md` for *missing-artifact* debt — a reference to a `scripts/` module, a bash script, an agent, or a sibling skill that no longer exists on disk, silently dangling after a rename or delete. The check is decidable by a filesystem `exists()` call, so it is owned by code at 100% accuracy. Everything that needs *judgment* — is a skill good, risky, or validated — is delegated, never re-scored here.
 

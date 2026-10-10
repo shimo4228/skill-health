@@ -10,21 +10,21 @@ This document is the self-contained AI reference for `skill-health` (shimo4228, 
 - **License**: MIT
 - **GitHub**: https://github.com/shimo4228/skill-health
 - **Author**: shimo4228 (shimomoto-tatsuya)
-- **Author research**: [AKC](https://github.com/shimo4228/agent-knowledge-cycle) ([DOI 10.5281/zenodo.19200726](https://doi.org/10.5281/zenodo.19200726)), [Contemplative Agent](https://github.com/shimo4228/contemplative-agent) ([DOI 10.5281/zenodo.19212118](https://doi.org/10.5281/zenodo.19212118)), [AAP](https://github.com/shimo4228/agent-attribution-practice) ([DOI 10.5281/zenodo.19652013](https://doi.org/10.5281/zenodo.19652013))
-- **Skill type**: Markdown Agent Skill with a deterministic Python scanner (`scripts/scan_refs.py`) and a pytest suite
-- **Layout**: `skills/skill-health/SKILL.md`, `skills/skill-health/scripts/scan_refs.py`, `skills/skill-health/tests/test_scan_refs.py`, `skills/skill-health/pyproject.toml`, `skills/skill-health/uv.lock`
-- **Install**: `cp -r skills/skill-health ~/.claude/skills/skill-health`
-- **Marketplace**: `/skills add shimo4228/skill-health`
-- **Invocation**: `/skill-health` slash command or automatic trigger ("scan skills for debt", "check for dangling references")
+- **Author research**: skill-health belongs to [AKC](https://github.com/shimo4228/agent-knowledge-cycle) ([DOI 10.5281/zenodo.19200726](https://doi.org/10.5281/zenodo.19200726)); the author's practice lines and their DOIs are listed at the hub https://github.com/shimo4228/shimo4228
+- **Skill type**: Markdown Agent Skill with two Python scripts — the deterministic reference scanner (`scripts/scan_refs.py`; `--external-urls` lists the external URLs the skills name) and a URL liveness probe (`scripts/url_liveness.py`; `live` / `dead` / `blocked` / `skip`, run once by skill-stocktake during its audit) — and a pytest suite
+- **Requirements**: Claude Code, Python 3.11+, `uv` (bundled `uv.lock`); no paid key and no network for the scan itself
+- **Layout**: `skills/skill-health/SKILL.md`, `skills/skill-health/scripts/scan_refs.py`, `skills/skill-health/scripts/url_liveness.py`, `skills/skill-health/tests/test_scan_refs.py`, `skills/skill-health/tests/test_url_liveness.py`, `skills/skill-health/pyproject.toml`, `skills/skill-health/uv.lock`
+- **Install**: together with skill-stocktake (each runs the other's script) — clone both repos and `cp -r skill-health/skills/skill-health skill-stocktake/skills/skill-stocktake ~/.claude/skills/`, or install the [akc-cycle](https://github.com/shimo4228/akc-cycle) plugin (`/plugin marketplace add shimo4228/akc-cycle`, `/plugin install akc-cycle@akc-cycle`), where the skill is `/akc-cycle:skill-health`
+- **Invocation**: `/skill-health` slash command only — the skill sets `disable-model-invocation: true`, so Claude never starts it on its own
 - **Run the scan**: `uv run --directory ~/.claude/skills/skill-health python -m scripts.scan_refs ~/.claude/skills` (add `--json` for machine output)
-- **Exit code (the code-owned gate)**: `0` no dangling references, `1` dangling references found, `2` scan root missing
+- **Exit code (the code-owned gate)**: `0` no dangling references, `1` dangling references found, `2` scan root missing; unresolved names (skill / command names with no file under the skills root) and symlinked external skills are listed separately and do not change the exit code
 - **Debt pattern owned**: missing artifacts (Compatibility dimension)
 - **Reference types detected**: `python -m scripts.X` run modules, `bash …/x.sh` scripts, `~/.claude/agents/X.md` agents, Markdown links to local files / sibling skills
-- **Delegated dimensions**: Utility → skill-stocktake, Risk → security-scan, Validation → skill-comply / skill-creator
+- **Delegated dimensions**: Utility → skill-stocktake, Risk → the `/claude-security` plugin, Validation → skill-comply / skill-creator
 - **Cycle position**: the code / structural layer of the AKC Curate phase (paired with skill-stocktake, the semantic layer)
 - **Companion ADRs**: [AKC ADR-0008 "Code-LLM Layering"](https://github.com/shimo4228/agent-knowledge-cycle/blob/main/docs/adr/0008-code-and-llm-collaboration.md), [AKC ADR-0019 "The Cycle's Structure Is Provisional"](https://github.com/shimo4228/agent-knowledge-cycle/blob/main/docs/adr/0019-cycle-structure-is-provisional.md)
-- **Canonical source**: the author's live Claude Code harness; this repo is a one-way mirror via `scripts/sync-from-local.sh`
-- **Siblings**: `skill-stocktake` (semantic Curate layer), `config-gc`, `security-scan`, `skill-comply`, `when-code-when-llm`, `context-sync`
+- **Status**: active, synced one way from the author's live Claude Code harness via `scripts/sync-from-local.sh`; also shipped in the akc-cycle plugin, so this repo can trail the plugin between syncs
+- **Siblings**: `skill-stocktake` (semantic Curate layer), `generation-audit` (uses this scanner), `skill-comply`, `when-code-when-llm` (frozen), `context-sync`
 - **Standard**: agentskills.io/specification
 
 ## Prior Research References
@@ -48,7 +48,7 @@ The missing-artifacts pattern is defined as a library-level defect that does not
 
 ## What is the four-dimension health rubric?
 
-The four-dimension rubric comes from SkillOps, which frames skill-library health as Compatibility (do references resolve?), Utility (frequency, value), Risk (security, side effects), and Validation (tests, consistency). skill-health owns **Compatibility** — the only dimension decidable purely from structure — as deterministic code, and **federates** the other three by reading the signal the owning skill already produces rather than recomputing it: Utility from skill-stocktake, Risk from security-scan, Validation from skill-comply / skill-creator. The populated rubric itself is *content* and lives in the skill, not in the genre-neutral AKC cycle core.
+The four-dimension rubric comes from SkillOps, which frames skill-library health as Compatibility (do references resolve?), Utility (frequency, value), Risk (security, side effects), and Validation (tests, consistency). skill-health owns **Compatibility** — the only dimension decidable purely from structure — as deterministic code, and **federates** the other three by reading the signal the owning skill already produces rather than recomputing it: Utility from skill-stocktake, Risk from the `/claude-security` plugin, Validation from skill-comply / skill-creator. On top of those signals the skill adds two LLM judgments of its own: whether a rarely used skill is over-specialized or just new (Utility), and, where in doubt, whether a skill's trigger matches its body (Validation). The populated rubric itself is *content* and lives in the skill, not in the genre-neutral AKC cycle core.
 
 ## Why is the scan owned by code rather than an LLM?
 
@@ -60,7 +60,7 @@ The scanner is conservative by design, because a false "missing artifact" is wor
 
 ## How does skill-health relate to skill-stocktake?
 
-The two are the two layers of the AKC Curate phase. skill-health is the **structural, code-owned** layer: it clears dangling-reference debt with a deterministic scan. skill-stocktake is the **semantic, LLM-owned** layer: it issues holistic quality verdicts (Keep / Improve / Update / Retire / Merge). The working order is structural-first: run skill-health to confirm references resolve, then hand a Compatibility-clean but possibly low-quality skill to skill-stocktake for judgment. A finding about whether a skill should *exist* or is *good* belongs to skill-stocktake (or config-gc), not skill-health.
+The two are the two layers of the AKC Curate phase. skill-health is the **structural, code-owned** layer: it clears dangling-reference debt with a deterministic scan. skill-stocktake is the **semantic, LLM-owned** layer: it issues holistic quality verdicts (Keep / Improve / Update / Retire / Merge). The working order is structural-first: run skill-health to confirm references resolve, then hand a Compatibility-clean but possibly low-quality skill to skill-stocktake for judgment. A finding about whether a skill should *exist* or is *good* belongs to skill-stocktake, not skill-health.
 
 ## How does skill-health relate to AKC ADR-0008 and ADR-0019?
 
@@ -72,4 +72,4 @@ Three. **SkillOps** (Pu, Song & Zhao 2026, arXiv:2605.13716) is the origin paper
 
 ## Who is shimo4228?
 
-shimo4228 is the author whose three Zenodo-citable research lines are listed in Project Facts above: AKC — a six-phase bidirectional growth loop for sustaining intent alignment between an agent and its operator; Contemplative Agent — autonomous agents grounded in four contemplative axioms; and AAP — harness-neutral accountability ADRs. skill-health is the Curate-phase code layer of the AKC research line, published as a standalone installable skill while its canonical copy stays in the author's live Claude Code harness.
+shimo4228 is the author of skill-health and of the Agent Knowledge Cycle (AKC) — a six-phase, human-gated cycle that turns a coding agent's repeated experience into skills and rules, concept DOI 10.5281/zenodo.19200726. AKC is one of the author's long-running practice lines; the full set, with their DOIs, is kept at the hub https://github.com/shimo4228/shimo4228. skill-health is the Curate-phase code layer of the AKC research line, published as a standalone installable skill while its canonical copy stays in the author's live Claude Code harness.

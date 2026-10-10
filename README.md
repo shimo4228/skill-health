@@ -54,7 +54,7 @@ plugin command, or project-scoped skill. Decide per item:
   [skill_name] skill-health L136: `/claude-security` → 'claude-security' (unresolved)
   [skill_name] skill-stocktake L325: `/skill-doctor` → 'skill-doctor' (unresolved)
 
-[closing note on the dimensions the scan leaves to other owners omitted]
+Structural 'missing artifacts' check only. Over-specialized scope and trigger↔body drift are judged by the skill's own procedure (LLM), not by this scanner; the risk dimension is delegated to the claude-security plugin and the validation dimension to skill-comply / skill-creator. Nothing here is reduced to a number.
 ```
 
 The four unresolved names come from the skill-health and skill-stocktake `SKILL.md` files themselves, so the first run after the clone install lists them. They are expected: `/claude-security` is the security plugin command in the table below and `/skill-doctor` is a Claude Code command that reports how much each skill's listing adds to every turn ([Claude Code docs](https://code.claude.com/docs/en/skills#find-unused-skills), as of 2026-10-10), and neither is a folder under the skills root. Unresolved names do not change the exit code; a dangling reference does.
@@ -81,7 +81,7 @@ Why code owns the one dimension it does is in [AKC ADR-0008 "Code-LLM Layering"]
 3. **Read the other three**: surface the *existing* signals for Utility, Risk, and Validation by labelling each value's source, and list `SKILL.md` bodies over 500 lines; never recompute them here
 4. **Report & ledger**: render a `skill × dimension` table and save the scan as JSON to `~/.claude/skills/skill-health/results.json` so the next run can diff
 
-The scanner is **conservative by design**: it skips template placeholders (`<your-repo>/x.sh`), illustrative example links (`[](url)`), and `--directory`-overridden commands, because a false "missing artifact" is worse than a missed one. The exit code is the code-owned gate: `0` clean, `1` dangling references found, `2` scan root missing.
+The scanner is **conservative by design**: it skips template placeholders (`<your-repo>/x.sh`), illustrative example links (`[](url)`), and commands whose `--directory` is a relative path it cannot place (it resolves `${CLAUDE_SKILL_DIR}` and absolute paths), because a false "missing artifact" is worse than a missed one. The exit code is the code-owned gate: `0` clean, `1` dangling references found, `2` scan root missing.
 
 ## When to Run It
 

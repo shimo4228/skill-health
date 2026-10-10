@@ -1,6 +1,6 @@
 # skill-health
 
-> A Claude Code skill (MIT) that runs a deterministic structural lint over a skill library: it scans every SKILL.md for *missing-artifact* debt — a reference to a `scripts/` module, bash script, agent, or sibling skill that no longer exists on disk. The check is decidable by a filesystem `exists()` call (100% accuracy); semantic quality, risk, and validation are delegated to skill-stocktake / security-scan / skill-comply.
+> A Claude Code skill (MIT) that runs a deterministic structural lint over a skill library: it scans every SKILL.md for *missing-artifact* debt — a reference to a `scripts/` module, bash script, agent, or sibling skill that no longer exists on disk. The check is decidable by a filesystem `exists()` call (100% accuracy); semantic quality, risk, and validation are delegated to skill-stocktake / the claude-security plugin / skill-comply.
 
 ## Core documentation
 
@@ -12,11 +12,12 @@
 
 - Owns one debt pattern no other harness skill checks: **missing artifacts** — a dangling reference in a SKILL.md after a rename or delete
 - **Structural property**: decidable from the literal Markdown text plus a filesystem `exists()` check → owned by deterministic code at 100% accuracy (AKC ADR-0008 Code-LLM Layering)
-- The semantic, risk, and validation dimensions are **delegated, never re-scored**: Utility → skill-stocktake, Risk → security-scan, Validation → skill-comply / skill-creator
+- The Utility, Risk, and Validation signals are **read from their owners, never re-scored**: Utility → skill-stocktake, Risk → the `/claude-security` plugin, Validation → skill-comply / skill-creator. The skill's procedure (not the scanner) adds two LLM judgments: whether a rarely used skill is over-specialized, and trigger↔body consistency where in doubt
 - Scanner is **conservative by design**: skips template placeholders (`<your-repo>/x.sh`), illustrative example links (`[](url)`), and `--directory`-overridden commands — a false "missing artifact" is worse than a missed one
 - Exit code is the code-owned gate: `0` clean, `1` dangling references found, `2` scan root missing
 - The **code / structural layer of the AKC Curate phase**, paired with skill-stocktake as the semantic layer (AKC ADR-0019)
-- Canonical copy lives in the author's Claude Code harness; this repo is a one-way mirror via `scripts/sync-from-local.sh`
+- Runs only when called as `/skill-health` (`disable-model-invocation: true`); install it together with skill-stocktake, since each runs the other's script
+- Status: active, synced one way from the author's Claude Code harness via `scripts/sync-from-local.sh`; also shipped in the [akc-cycle](https://github.com/shimo4228/akc-cycle) plugin as `/akc-cycle:skill-health`, so this repo can trail the plugin between syncs
 
 ## Standard reference
 
@@ -33,8 +34,8 @@
 ## Sibling skills
 
 - [skill-stocktake](https://github.com/shimo4228/skill-stocktake): holistic skill *quality* audit (Keep/Improve/Retire/Merge) — the semantic Curate layer this skill pairs with
-- [config-gc](https://github.com/shimo4228/config-gc): GC over *existence* across hooks / permissions / MCP / cache
-- [security-scan](https://github.com/shimo4228/security-scan): the *risk* dimension skill-health delegates to
+- [generation-audit](https://github.com/shimo4228/generation-audit): re-checks rules, skills and agents when a new Claude model takes over a role; uses this scanner for the structural part
 - [skill-comply](https://github.com/shimo4228/skill-comply): measures whether agents actually follow skill / rule definitions (the *validation* dimension)
-- [when-code-when-llm](https://github.com/shimo4228/when-code-when-llm): per-task structural-vs-semantic tool selection — the axis skill-health embodies
+- [when-code-when-llm](https://github.com/shimo4228/when-code-when-llm) (frozen): per-task structural-vs-semantic tool selection — the axis skill-health embodies
 - [context-sync](https://github.com/shimo4228/context-sync): audits and fixes project documentation roles
+- [shimo4228](https://github.com/shimo4228/shimo4228): the author's hub — AKC beside the other practice lines and their DOIs
